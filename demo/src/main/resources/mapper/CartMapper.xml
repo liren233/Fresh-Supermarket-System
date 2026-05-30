@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.xhm.main.dao.FCartDao">
+    <resultMap id="BaseResultMap" type="com.xhm.main.model.FCart" >
+        <id column="id" property="id" jdbcType="INTEGER" />
+        <result column="user_id" property="user_id" jdbcType="INTEGER" />
+        <result column="num" property="num" jdbcType="INTEGER" />
+        <result column="goods_id" property="goods_id" jdbcType="INTEGER" />
+
+        <association property="bGood" javaType="com.xhm.main.model.BGood">
+            <id column="b_good_id" property="id" jdbcType="INTEGER"/>
+            <result column="good_name" property="good_name" jdbcType="VARCHAR"/>
+            <result column="img_url" property="img_url" jdbcType="VARCHAR"/>
+            <result column="price" property="price" jdbcType="DOUBLE"/>
+            <result column="unit" property="unit" jdbcType="VARCHAR"/>
+            <result column="intro" property="intro" jdbcType="VARCHAR"/>
+            <result column="type_id" property="type_id" jdbcType="INTEGER"/>
+        </association>
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+        id, user_id, num
+    </sql>
+
+    <!-- 根据用户ID查询购物车（关键修复：给商品ID起别名 b_good_id） -->
+    <select id="getCartByUserId" resultMap="BaseResultMap" parameterType="java.lang.Integer" >
+        select
+            c.id,
+            c.num,
+            c.user_id,
+            g.id as b_good_id,
+            g.good_name,
+            g.img_url,
+            g.price,
+            g.intro,
+            g.unit,
+            g.type_id
+        from f_cart c
+                 inner join f_cart_goods cg on c.id = cg.cart_id
+                 left join b_goods g on cg.goods_id = g.id
+        where c.user_id = #{id,jdbcType=INTEGER}
+    </select>
+
+    <!-- 其他方法（getCartById、getGood、insertCart等）和之前保持一致 -->
+    <select id="getCartById" resultMap="BaseResultMap" parameterType="java.lang.Integer" >
+        select
+            c.id,
+            c.num,
+            c.user_id,
+            g.id as b_good_id,
+            g.good_name,
+            g.img_url,
+            g.price,
+            g.intro,
+            g.unit,
+            g.type_id
+        from f_cart c
+                 inner join f_cart_goods cg on c.id = cg.cart_id
+                 left join b_goods g on cg.goods_id = g.id
+        where c.id = #{id,jdbcType=INTEGER}
+    </select>
+
+    <select id="getGood" resultMap="BaseResultMap" parameterType="com.xhm.main.model.FCart">
+        select
+            c.id,
+            c.user_id,
+            c.num
+        from f_cart c
+                 inner join f_cart_goods cg on c.id = cg.cart_id
+        where c.user_id = #{user_id} and cg.goods_id = #{goods_id}
+    </select>
+
+    <insert id="insertCart" keyProperty="id" keyColumn="id" parameterType="com.xhm.main.model.FCart" useGeneratedKeys="true">
+        insert into f_cart (user_id, num) values (#{user_id}, #{num})
+    </insert>
+
+    <update id="updateCart" keyColumn="id" keyProperty="id" parameterType="com.xhm.main.model.FCart" useGeneratedKeys="true">
+        update f_cart
+        <set>
+            <if test="user_id != null">
+                user_id = #{user_id,jdbcType=INTEGER},
+            </if>
+            <if test="num != null">
+                num = #{num,jdbcType=INTEGER}
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+
+    <delete id="deleteCart" parameterType="java.lang.Integer">
+        delete from f_cart where id = #{id,jdbcType=INTEGER}
+    </delete>
+
+    <delete id="cleanCart" parameterType="java.lang.Void">
+        delete from f_cart
+    </delete>
+
+    <select id="list" resultMap="BaseResultMap" parameterType="com.xhm.main.model.Page">
+        select
+        c.id,
+        c.num,
+        c.user_id,
+        g.id as b_good_id,
+        g.good_name,
+        g.img_url,
+        g.price,
+        g.intro,
+        g.unit,
+        g.type_id
+        from f_cart c
+        inner join f_cart_goods cg on c.id = cg.cart_id
+        left join b_goods g on cg.goods_id = g.id
+        <if test="search != null and search!=''">
+            where g.good_name like concat('%',#{search},'%') or u.user_name like concat('%',#{search},'%')
+        </if>
+        <if test="start != null and start >=0 and count !=null">
+            limit #{start},#{count}
+        </if>
+    </select>
+
+    <select id="total" parameterType="com.xhm.main.model.Page" resultType="java.lang.Integer">
+        select count(1)
+        from f_cart c
+        inner join f_cart_goods cg on c.id = cg.cart_id
+        left join b_goods g on cg.goods_id = g.id
+        <if test="search != null and search!=''">
+            where g.good_name like concat('%',#{search},'%')
+        </if>
+    </select>
+
+    <insert id="insertCartGoods">
+        insert into f_cart_goods (cart_id, goods_id) values (#{cartId}, #{goodsId})
+    </insert>
+</mapper>

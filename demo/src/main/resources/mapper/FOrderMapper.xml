@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xhm.main.dao.FOrderDao">
+    <resultMap id="BaseResultMap" type="com.xhm.main.model.FOrder" >
+        <id column="id" property="id" jdbcType="INTEGER" />
+        <result column="order_no" property="order_no" jdbcType="VARCHAR" />
+        <result column="status" property="status" jdbcType="INTEGER" />
+        <result column="user_id" property="user_id" jdbcType="INTEGER"/>
+        <result column="time" property="time" jdbcType="TIMESTAMP"/>
+        <result column="user_name" property="user_name" jdbcType="VARCHAR"/>
+        <result column="phone" property="phone" jdbcType="VARCHAR"/>
+        <result column="address" property="address" jdbcType="VARCHAR"/>
+        <result column="total_price" property="total_price" jdbcType="INTEGER"/>
+        <result column="pay_status" property="pay_status" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        o.id,order_no,o.status,user_id,`time`,o.user_name,o.phone,o.address,total_price,pay_status
+    </sql>
+
+    <!-- 【原有】后台分页查询 -->
+    <select id="listPage" resultMap="BaseResultMap" parameterType="com.xhm.main.model.Page">
+        select <include refid="Base_Column_List"/>
+        from f_order o
+        left join f_user u on o.user_id=u.id
+        <if test="search != null and search!=''">
+            where o.user_name like concat('%',#{search},'%')
+            or u.user_name like concat('%',#{search},'%')
+            or o.phone like concat('%',#{search},'%')
+            or u.phone like concat('%',#{search},'%')
+        </if>
+        <if test="start != null and start >=0 and count !=null">
+            limit #{start},#{count}
+        </if>
+    </select>
+
+    <!-- 【新增】前端用户订单列表（解决404） -->
+    <select id="list" resultMap="BaseResultMap">
+        select <include refid="Base_Column_List"/>
+        from f_order o
+        where o.user_id = #{userId}
+        order by o.time desc
+        limit #{start}, #{size}
+    </select>
+
+    <!-- 【新增】前端用户订单总数 -->
+    <select id="count" parameterType="int" resultType="int">
+        select count(1) from f_order o where o.user_id = #{userId}
+    </select>
+
+    <!-- 【原有】根据用户ID查询订单 -->
+    <select id="getOrderByUserId" parameterType="int" resultMap="BaseResultMap">
+        select <include refid="Base_Column_List"/>
+        from f_order o
+        where o.user_id = #{userId}
+        order by o.time desc
+    </select>
+
+    <!-- 【原有】根据ID查询 -->
+    <select id="getOrderById" resultMap="BaseResultMap" parameterType="int">
+        select <include refid="Base_Column_List"/>
+        from f_order o
+        left join f_user u on o.user_id=u.id
+        where o.id=#{id}
+    </select>
+
+    <!-- 【原有】添加订单 -->
+    <insert id="insertOrder" keyProperty="id" parameterType="com.xhm.main.model.FOrder" useGeneratedKeys="true">
+        insert into f_order (order_no,status,time,user_name,phone,address,total_price,user_id,pay_status)
+        values (#{order_no},#{status},#{time},#{user_name},#{phone},#{address},#{total_price},#{user_id},#{pay_status})
+    </insert>
+
+    <!-- 【原有】删除订单 -->
+    <delete id="deleteOrder" parameterType="int">
+        delete from f_order where id=#{id}
+    </delete>
+
+    <!-- 【原有】统计总数 -->
+    <select id="total" parameterType="com.xhm.main.model.Page" resultType="int">
+        select count(1)
+        from f_order o left join f_user u on o.user_id=u.id
+        <if test="search != null and search!=''">
+            where o.user_name like concat('%',#{search},'%')
+            or u.user_name like concat('%',#{search},'%')
+            or o.phone like concat('%',#{search},'%')
+            or u.phone like concat('%',#{search},'%')
+        </if>
+    </select>
+    
+    <!-- 【新增】更新订单 -->
+    <update id="updateOrder" parameterType="com.xhm.main.model.FOrder">
+        update f_order
+        set status = #{status},
+            pay_status = #{pay_status}
+        where id = #{id}
+    </update>
+</mapper>

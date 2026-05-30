@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--
+      mapper为映射的根节点，用来管理DAO接口
+      namespace指定DAO接口的完整类名，表示mapper配置文件管理哪个DAO接口(包.接口名)
+      mybatis会依据这个接口动态创建一个实现类去实现这个接口，而这个实现类是一个Mapper对象
+   -->
+<mapper namespace="com.xhm.main.dao.BTypeDao">
+    <!-- 修正：type指向新的Model包路径 -->
+    <resultMap id="BaseResultMap" type="com.xhm.main.model.BType" >
+        <id column="id" property="id" jdbcType="INTEGER" />
+        <result column="type_name" property="type_name" jdbcType="VARCHAR" />
+        <result column="fid" property="fid" jdbcType="INTEGER" />
+    </resultMap>
+
+    <!--    查询字段集合-->
+    <sql id="Base_Column_List" >
+        id,type_name,fid
+    </sql>
+
+    <!-- 根据ID查询分类 -->
+    <select id="getTypeById" resultMap="BaseResultMap" parameterType="java.lang.Integer" >
+        select
+        <include refid="Base_Column_List" />
+        from b_type
+        where id = #{id,jdbcType=INTEGER}
+    </select>
+
+    <!-- 分类列表查询（修复：补充分页+搜索逻辑，匹配Page参数） -->
+    <select id="typeList" resultMap="BaseResultMap" parameterType="com.xhm.main.model.Page">
+        select id, type_name, fid
+        from b_type
+        order by
+        case when fid = 0 then id else fid end asc,  -- 先按父节点ID排序
+        id asc  -- 同级按ID排序
+        <if test="start != null and count != null">
+            limit #{start}, #{count}
+        </if>
+    </select>
+
+    <!-- 分类总数查询（修复：搜索字段错误） -->
+    <select id="total" parameterType="com.xhm.main.model.Page" resultType="java.lang.Integer">
+        select count(1) from b_type
+        <!-- 修复：user_name → type_name（分类表字段匹配） -->
+        <if test="search != null and search!=''">
+            where type_name like concat('%',#{search},'%')
+        </if>
+    </select>
+
+    <!-- 根据父ID查询分类 -->
+    <select id="getTypeByFid" resultMap="BaseResultMap" parameterType="java.lang.Integer">
+        select
+        <include refid="Base_Column_List"/>
+        from b_type where fid=#{id}
+    </select>
+
+    <!--    添加分类信息（修正parameterType路径）-->
+    <insert id="insertType" keyProperty="id" keyColumn="id" parameterType="com.xhm.main.model.BType" useGeneratedKeys="true">
+        insert into b_type (type_name,fid) values (#{type_name},#{fid})
+    </insert>
+
+    <!--    删除分类信息-->
+    <delete id="deleteType" parameterType="java.lang.Integer">
+        delete from b_type
+        where id = #{id,jdbcType=INTEGER}
+    </delete>
+
+    <!--    修改分类信息（修正parameterType路径）-->
+    <update id="updateType" keyColumn="id" keyProperty="id" parameterType="com.xhm.main.model.BType" useGeneratedKeys="true">
+        update  b_type
+        <set>
+            <if test="type_name != null">
+                type_name = #{type_name,jdbcType=VARCHAR},
+            </if>
+            <if test="fid !=null">
+                fid = #{fid,jdbcType=INTEGER},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+
+</mapper>

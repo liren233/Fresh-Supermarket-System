@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xhm.main.dao.BGoodDao">
+
+    <resultMap id="BaseResultMap" type="com.xhm.main.model.BGood" >
+        <id column="id" property="id" jdbcType="INTEGER" />
+        <result column="good_name" property="good_name" jdbcType="VARCHAR" />
+        <result column="img_url" property="img_url" jdbcType="VARCHAR" />
+        <result column="type_id" property="type_id" jdbcType="INTEGER" />
+        <result column="intro" property="intro" jdbcType="VARCHAR" />
+        <result column="unit" property="unit" jdbcType="VARCHAR" />
+        <result column="price" property="price" jdbcType="DECIMAL"/>
+
+        <!-- 一对一 关联分类 → 这里必须用 association！！！ -->
+        <association property="bType" javaType="com.xhm.main.model.BType">
+            <id column="t_id" property="id"/>
+            <result column="type_name" property="type_name"/>
+        </association>
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+        id, good_name, img_url,price,intro,unit,type_id
+    </sql>
+
+    <!-- 根据分类ID查询商品 -->
+    <select id="getGoodByTypeId" resultMap="BaseResultMap" parameterType="java.lang.Integer" >
+        select
+        <include refid="Base_Column_List" />
+        from b_goods
+        where type_id= #{type_id}
+    </select>
+
+    <!-- 根据ID查询商品 -->
+    <select id="getGoodById" resultMap="BaseResultMap" parameterType="java.lang.Integer" >
+        select
+        <include refid="Base_Column_List" />
+        from b_goods
+        where id = #{id,jdbcType=INTEGER}
+    </select>
+
+    <!-- 分页查询商品（已修复关联查询） -->
+    <select id="list" resultMap="BaseResultMap" parameterType="com.xhm.main.model.Page">
+        select
+        g.*,
+        t.id as t_id,
+        t.type_name
+        from b_goods g
+        left join b_type t on g.type_id = t.id
+        <if test="search != null and search!=''">
+            where g.good_name like concat('%',#{search},'%')
+        </if>
+        <if test="start != null and start >=0 and count !=null">
+            limit #{start},#{count}
+        </if>
+    </select>
+
+    <!-- 分页总数查询 -->
+    <select id="total" parameterType="com.xhm.main.model.Page" resultType="java.lang.Integer">
+        select count(1) from b_goods
+        <if test="search != null and search!=''">
+            where good_name like concat('%',#{search},'%')
+        </if>
+    </select>
+
+    <!-- 添加商品 -->
+    <insert id="insertGood" keyProperty="id" keyColumn="id" parameterType="com.xhm.main.model.BGood" useGeneratedKeys="true">
+        insert into b_goods (good_name, unit,img_url,type_id,intro,price)
+        values (#{good_name},#{unit},#{img_url},#{type_id},#{intro},#{price})
+    </insert>
+
+    <!-- 删除商品 -->
+    <delete id="deleteGood" parameterType="java.lang.Integer">
+        delete from b_goods
+        where id = #{id,jdbcType=INTEGER}
+    </delete>
+
+    <!-- 修改商品 -->
+    <update id="updateGood" keyColumn="id" keyProperty="id" parameterType="com.xhm.main.model.BGood" useGeneratedKeys="true">
+        update  b_goods
+        <set>
+            <if test="good_name != null">
+                good_name = #{good_name,jdbcType=VARCHAR},
+            </if>
+            <if test="type_id !=null">
+                type_id = #{type_id,jdbcType=INTEGER},
+            </if>
+            <if test="price !=null">
+                price = #{price,jdbcType=DECIMAL},
+            </if>
+            <if test="img_url !=null">
+                img_url = #{img_url,jdbcType=VARCHAR},
+            </if>
+            <if test="unit !=null">
+                unit = #{unit,jdbcType=VARCHAR},
+            </if>
+            <if test="intro !=null">
+                intro = #{intro,jdbcType=VARCHAR}
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+
+</mapper>

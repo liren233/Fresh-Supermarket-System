@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xhm.main.dao.FAddressDao">
+    <resultMap id="BaseResultMap" type="com.xhm.main.model.FAddress" >
+        <id column="id" property="id" jdbcType="INTEGER" />
+        <result column="user_name" property="user_name" jdbcType="VARCHAR" />
+        <result column="phone" property="phone" jdbcType="VARCHAR" />
+        <result column="address" property="address" jdbcType="VARCHAR" />
+        <result column="is_default" property="is_default" jdbcType="INTEGER" />
+        <result column="user_id" property="user_id" jdbcType="INTEGER" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,user_name,phone,address,is_default,user_id
+    </sql>
+
+    <select id="getAddressById" resultMap="BaseResultMap" parameterType="int">
+        select <include refid="Base_Column_List" /> from f_address where id = #{id}
+    </select>
+
+    <select id="getAddressByUserId" resultMap="BaseResultMap" parameterType="int">
+        select <include refid="Base_Column_List" /> from f_address where user_id = #{id}
+    </select>
+
+    <select id="getAddressListByUserId" resultMap="BaseResultMap" parameterType="int">
+        select <include refid="Base_Column_List" /> from f_address where user_id = #{userId}
+    </select>
+
+    <insert id="insertAddress" parameterType="com.xhm.main.model.FAddress" useGeneratedKeys="true" keyProperty="id">
+        insert into f_address (user_name, phone, address, is_default, user_id)
+        values (#{user_name},#{phone},#{address},#{is_default},#{user_id})
+    </insert>
+
+    <update id="updateAddress" parameterType="com.xhm.main.model.FAddress">
+        update f_address set
+                             user_name=#{user_name},
+                             phone=#{phone},
+                             address=#{address},
+                             is_default=#{is_default}
+        where id=#{id}
+    </update>
+
+    <delete id="deleteAddress" parameterType="int">
+        delete from f_address where id=#{id}
+    </delete>
+
+    <select id="list" resultMap="BaseResultMap" parameterType="com.xhm.main.model.Page">
+        select <include refid="Base_Column_List"/> from f_address
+        <if test="search != null and search!=''">
+            where user_name like concat('%',#{search},'%') or phone like concat('%',#{search},'%')
+        </if>
+        <if test="start != null and start >=0 and count !=null">
+            limit #{start},#{count}
+        </if>
+    </select>
+
+    <select id="total" parameterType="com.xhm.main.model.Page" resultType="int">
+        select count(1) from f_address
+        <if test="search != null and search!=''">
+            where user_name like concat('%',#{search},'%') or phone like concat('%',#{search},'%')
+        </if>
+    </select>
+
+    <!-- 设为默认专用 -->
+    <update id="setAllNotDefault">
+        UPDATE f_address SET is_default = 0 WHERE user_id = #{userId}
+    </update>
+
+    <update id="setOneDefault">
+        UPDATE f_address SET is_default = 1 WHERE id = #{id}
+    </update>
+
+</mapper>
